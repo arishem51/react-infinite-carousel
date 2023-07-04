@@ -40,41 +40,40 @@ const createStyleInline = (index: number) => {
 };
 
 const Carousel = () => {
-  const isFirstRenderRef = useRef(true);
   const [currentIndex, setCurrentIndex] = useState(Math.floor(items.length));
+  const [shouldTranslate, setShouldTranslate] = useState(false);
   const scrollRefContainer = useRef<HTMLDivElement>(null);
 
-  const translateScrollContainer = useCallback((translate: number) => {
-    (scrollRefContainer.current as HTMLDivElement).style.translate =
-      convertToPixels(convertToNegative(translate));
-  }, []);
+  const translateScrollContainer = useCallback(
+    (translate: number, options?: { hasTransition?: boolean }) => {
+      const scrollEl = scrollRefContainer.current as HTMLDivElement;
+      if (options?.hasTransition) {
+        scrollEl.style.transition = TRANSITION_TRANSLATE;
+      }
+      scrollEl.style.translate = convertToPixels(convertToNegative(translate));
+    },
+    []
+  );
 
   useLayoutEffect(() => {
-    if (isFirstRenderRef.current) {
-      // The carousel should be the middle item
-      const scrollEl = scrollRefContainer.current as HTMLDivElement;
-      const { clientWidth } = scrollEl;
-      const distance = items.length * clientWidth;
-      requestAnimationFrame(() => translateScrollContainer(distance));
-
-      isFirstRenderRef.current = false;
-      requestIdleCallback(() => {
-        scrollEl.style.transition = TRANSITION_TRANSLATE;
-      });
-    }
+    // The carousel should be the middle item
+    const scrollEl = scrollRefContainer.current as HTMLDivElement;
+    const { clientWidth } = scrollEl;
+    const distance = items.length * clientWidth;
+    requestAnimationFrame(() => translateScrollContainer(distance));
   }, [translateScrollContainer]);
 
   useEffect(() => {
-    if (!isFirstRenderRef.current) {
+    if (shouldTranslate) {
       const scrollEl = scrollRefContainer.current as HTMLDivElement;
       const { clientWidth } = scrollEl;
       const distance = clientWidth * currentIndex;
 
       requestAnimationFrame(() => {
-        translateScrollContainer(distance);
+        translateScrollContainer(distance, { hasTransition: true });
       });
     }
-  }, [currentIndex, translateScrollContainer]);
+  }, [currentIndex, shouldTranslate, translateScrollContainer]);
 
   const renderItem = useCallback(() => {
     return items.map((item) => {
@@ -91,16 +90,19 @@ const Carousel = () => {
   }, []);
 
   const handleNextBtnClick = () => {
+    setShouldTranslate(true);
     setCurrentIndex((prev) => prev + 1);
   };
 
   const handlePrevBtnClick = () => {
+    setShouldTranslate(true);
     setCurrentIndex((prev) => prev - 1);
   };
 
   return (
     <section className={styles.container}>
       <div className={styles.scrollContainer} ref={scrollRefContainer}>
+        {renderItem()}
         {renderItem()}
         {renderItem()}
       </div>
