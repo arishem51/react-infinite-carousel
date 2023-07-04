@@ -32,7 +32,7 @@ const convertToPixels = (num: number) => `${num}px`;
 const SOME_ID = "some-id";
 
 const Carousel = () => {
-  const isFirstRender = useRef(true);
+  const isFirstRenderRef = useRef(true);
   const [currentIndex, setCurrentIndex] = useState(Math.floor(items.length));
   const scrollRefContainer = useRef<HTMLDivElement>(null);
 
@@ -42,19 +42,31 @@ const Carousel = () => {
   }, []);
 
   useLayoutEffect(() => {
-    if (isFirstRender.current) {
+    if (isFirstRenderRef.current) {
       // The carousel should be the middle item
       const scrollEl = scrollRefContainer.current as HTMLDivElement;
       const { clientWidth } = scrollEl;
       const distance = items.length * clientWidth;
       requestAnimationFrame(() => translateScrollContainer(distance));
 
-      isFirstRender.current = false;
+      isFirstRenderRef.current = false;
       requestIdleCallback(() => {
         scrollEl.style.transition = TRANSITION_TRANSLATE;
       });
     }
   }, [translateScrollContainer]);
+
+  useEffect(() => {
+    if (!isFirstRenderRef.current) {
+      const scrollEl = scrollRefContainer.current as HTMLDivElement;
+      const { clientWidth } = scrollEl;
+      const distance = clientWidth * currentIndex;
+
+      requestAnimationFrame(() => {
+        translateScrollContainer(distance);
+      });
+    }
+  }, [currentIndex, translateScrollContainer]);
 
   const renderItem = useCallback(() => {
     return items.map((item) => {
@@ -79,18 +91,6 @@ const Carousel = () => {
   const handlePrevBtnClick = () => {
     setCurrentIndex((prev) => prev - 1);
   };
-
-  useEffect(() => {
-    if (!isFirstRender.current) {
-      const scrollEl = scrollRefContainer.current as HTMLDivElement;
-      const { clientWidth } = scrollEl;
-      const distance = clientWidth * currentIndex;
-
-      requestAnimationFrame(() => {
-        translateScrollContainer(distance);
-      });
-    }
-  }, [currentIndex, translateScrollContainer]);
 
   return (
     <section className={styles.container}>
