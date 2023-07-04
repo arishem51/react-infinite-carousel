@@ -27,9 +27,17 @@ const items = [
 ];
 
 const TRANSITION_TRANSLATE = "translate .3s";
-const convertToNegative = (num: number) => num * -1;
-const convertToPixels = (num: number) => `${num}px`;
 const SOME_ID = "some-id";
+const CSS_VARIABLE_BG_COLOR = "--bg-color";
+const PIXEL = "px";
+
+const convertToPixels = (num: number) => `${num}${PIXEL}`;
+const convertToNegative = (num: number) => num * -1;
+const createStyleInline = (index: number) => {
+  return {
+    [CSS_VARIABLE_BG_COLOR]: `var(--bl-color${index})`,
+  } as React.CSSProperties;
+};
 
 const Carousel = () => {
   const isFirstRenderRef = useRef(true);
@@ -70,9 +78,7 @@ const Carousel = () => {
 
   const renderItem = useCallback(() => {
     return items.map((item) => {
-      const styleInline = {
-        "--bg-color": `var(--bl-color${item.name})`,
-      } as React.CSSProperties;
+      const styleInline = createStyleInline(item.name);
       const className = `${styles.item} center`;
       const key = SOME_ID + item.name;
 
