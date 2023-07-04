@@ -29,9 +29,9 @@ const items = [
 const TRANSITION_TRANSLATE = "translate .3s";
 const convertToNegative = (num: number) => num * -1;
 const convertToPixels = (num: number) => `${num}px`;
+const SOME_ID = "some-id";
 
 const Carousel = () => {
-  const id = useId();
   const isFirstRender = useRef(true);
   const [currentIndex, setCurrentIndex] = useState(Math.floor(items.length));
   const scrollRefContainer = useRef<HTMLDivElement>(null);
@@ -62,7 +62,7 @@ const Carousel = () => {
         "--bg-color": `var(--bl-color${item.name})`,
       } as React.CSSProperties;
       const className = `${styles.item} center`;
-      const key = id + item.name;
+      const key = SOME_ID + item.name;
 
       return (
         <div className={className} key={key} style={styleInline}>
@@ -70,7 +70,7 @@ const Carousel = () => {
         </div>
       );
     });
-  }, [id]);
+  }, []);
 
   const handleNextBtnClick = () => {
     setCurrentIndex((prev) => prev + 1);
