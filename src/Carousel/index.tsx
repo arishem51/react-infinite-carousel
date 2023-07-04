@@ -27,6 +27,8 @@ const items = [
 ];
 
 const TRANSITION_TRANSLATE = "translate .3s";
+const TRANSITION_TIME = 300;
+const BREATHE_TIME = 50;
 const SOME_ID = "some-id";
 const CSS_VARIABLE_BG_COLOR = "--bg-color";
 const PIXEL = "px";
@@ -40,8 +42,11 @@ const createStyleInline = (index: number) => {
 };
 
 const Carousel = () => {
-  const [currentIndex, setCurrentIndex] = useState(Math.floor(items.length));
+  const originIndex = items.length;
+  const [currentIndex, setCurrentIndex] = useState(originIndex);
   const [shouldTranslate, setShouldTranslate] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [hasReset, setHasReset] = useState(false);
   const scrollRefContainer = useRef<HTMLDivElement>(null);
 
   const translateScrollContainer = useCallback(
@@ -49,6 +54,8 @@ const Carousel = () => {
       const scrollEl = scrollRefContainer.current as HTMLDivElement;
       if (options?.hasTransition) {
         scrollEl.style.transition = TRANSITION_TRANSLATE;
+      } else {
+        scrollEl.style.transition = "";
       }
       scrollEl.style.translate = convertToPixels(convertToNegative(translate));
     },
@@ -60,20 +67,53 @@ const Carousel = () => {
     const scrollEl = scrollRefContainer.current as HTMLDivElement;
     const { clientWidth } = scrollEl;
     const distance = items.length * clientWidth;
-    requestAnimationFrame(() => translateScrollContainer(distance));
+    requestAnimationFrame(() => {
+      translateScrollContainer(distance);
+      requestIdleCallback(() => {
+        setShouldTranslate(true);
+      });
+    });
   }, [translateScrollContainer]);
 
   useEffect(() => {
-    if (shouldTranslate) {
+    if (shouldTranslate && !hasReset) {
       const scrollEl = scrollRefContainer.current as HTMLDivElement;
       const { clientWidth } = scrollEl;
       const distance = clientWidth * currentIndex;
-
       requestAnimationFrame(() => {
+        setIsTranslating(true);
         translateScrollContainer(distance, { hasTransition: true });
+        setTimeout(() => {
+          setIsTranslating(false);
+        }, TRANSITION_TIME + BREATHE_TIME);
       });
+    } else {
+      setHasReset(false);
+      setShouldTranslate(false);
     }
-  }, [currentIndex, shouldTranslate, translateScrollContainer]);
+  }, [currentIndex, hasReset, shouldTranslate, translateScrollContainer]);
+
+  useEffect(() => {
+    const isResetByNextIndex = currentIndex === items.length * 2;
+    const isResetByPrevIndex = currentIndex === items.length - 1;
+    if (isResetByNextIndex || isResetByPrevIndex) {
+      const { clientWidth } = scrollRefContainer.current as HTMLDivElement;
+      const timeoutId = setTimeout(() => {
+        const resetIndex = isResetByNextIndex
+          ? originIndex
+          : originIndex * 2 - 1;
+        const distance = resetIndex * clientWidth;
+        requestAnimationFrame(() => {
+          translateScrollContainer(distance);
+        });
+        setCurrentIndex(resetIndex);
+        setHasReset(true);
+      }, TRANSITION_TIME);
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [currentIndex, originIndex, translateScrollContainer]);
 
   const renderItem = useCallback(() => {
     return items.map((item) => {
@@ -90,17 +130,24 @@ const Carousel = () => {
   }, []);
 
   const handleNextBtnClick = () => {
-    setShouldTranslate(true);
+    if (isTranslating) {
+      return;
+    }
     setCurrentIndex((prev) => prev + 1);
+    setShouldTranslate(true);
   };
 
   const handlePrevBtnClick = () => {
-    setShouldTranslate(true);
+    if (isTranslating) {
+      return;
+    }
     setCurrentIndex((prev) => prev - 1);
+    setShouldTranslate(true);
   };
 
   return (
     <section className={styles.container}>
+      <h1>{isTranslating ? "Translating" : "Idle"}</h1>
       <div className={styles.scrollContainer} ref={scrollRefContainer}>
         {renderItem()}
         {renderItem()}
