@@ -43,6 +43,7 @@ const Carousel = () => {
 
   useLayoutEffect(() => {
     if (isFirstRender.current) {
+      // The carousel should be the middle item
       const scrollEl = scrollRefContainer.current as HTMLDivElement;
       const { clientWidth } = scrollEl;
       const distance = items.length * clientWidth;
@@ -55,7 +56,7 @@ const Carousel = () => {
     }
   }, [translateScrollContainer]);
 
-  const renderItem = () => {
+  const renderItem = useCallback(() => {
     return items.map((item) => {
       const styleInline = {
         "--bg-color": `var(--bl-color${item.name})`,
@@ -69,7 +70,7 @@ const Carousel = () => {
         </div>
       );
     });
-  };
+  }, [id]);
 
   const handleNextBtnClick = () => {
     setCurrentIndex((prev) => prev + 1);
@@ -86,10 +87,10 @@ const Carousel = () => {
       const distance = clientWidth * currentIndex;
 
       requestAnimationFrame(() => {
-        scrollEl.style.translate = convertToPixels(convertToNegative(distance));
+        translateScrollContainer(distance);
       });
     }
-  }, [currentIndex]);
+  }, [currentIndex, translateScrollContainer]);
 
   return (
     <section className={styles.container}>
