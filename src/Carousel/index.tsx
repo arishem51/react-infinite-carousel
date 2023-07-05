@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -63,7 +62,6 @@ const Carousel = () => {
   );
 
   useLayoutEffect(() => {
-    // The carousel should be the middle item
     const scrollEl = scrollRefContainer.current as HTMLDivElement;
     const { clientWidth } = scrollEl;
     const distance = items.length * clientWidth;
@@ -93,15 +91,21 @@ const Carousel = () => {
     }
   }, [currentIndex, hasReset, shouldTranslate, translateScrollContainer]);
 
+  const calculateResetIndex = useCallback(
+    (isResetByNextIndex: boolean) => {
+      return isResetByNextIndex ? originIndex : originIndex * 2 - 1;
+    },
+    [originIndex]
+  );
+
   useEffect(() => {
     const isResetByNextIndex = currentIndex === items.length * 2;
     const isResetByPrevIndex = currentIndex === items.length - 1;
+
     if (isResetByNextIndex || isResetByPrevIndex) {
       const { clientWidth } = scrollRefContainer.current as HTMLDivElement;
       const timeoutId = setTimeout(() => {
-        const resetIndex = isResetByNextIndex
-          ? originIndex
-          : originIndex * 2 - 1;
+        const resetIndex = calculateResetIndex(isResetByNextIndex);
         const distance = resetIndex * clientWidth;
         requestAnimationFrame(() => {
           translateScrollContainer(distance);
@@ -109,11 +113,17 @@ const Carousel = () => {
         setCurrentIndex(resetIndex);
         setHasReset(true);
       }, TRANSITION_TIME);
+
       return () => {
         clearTimeout(timeoutId);
       };
     }
-  }, [currentIndex, originIndex, translateScrollContainer]);
+  }, [
+    calculateResetIndex,
+    currentIndex,
+    originIndex,
+    translateScrollContainer,
+  ]);
 
   const renderItem = useCallback(() => {
     return items.map((item) => {
@@ -129,20 +139,23 @@ const Carousel = () => {
     });
   }, []);
 
+  const handleClick = useCallback((nextIndex: React.SetStateAction<number>) => {
+    setCurrentIndex(nextIndex);
+    setShouldTranslate(true);
+  }, []);
+
   const handleNextBtnClick = () => {
     if (isTranslating) {
       return;
     }
-    setCurrentIndex((prev) => prev + 1);
-    setShouldTranslate(true);
+    handleClick((prev) => prev + 1);
   };
 
   const handlePrevBtnClick = () => {
     if (isTranslating) {
       return;
     }
-    setCurrentIndex((prev) => prev - 1);
-    setShouldTranslate(true);
+    handleClick((prev) => prev - 1);
   };
 
   return (
